@@ -242,18 +242,9 @@ class WEM3080T(IamMeter):
         'Power_C':                  (2,2, 'W'),
         'ImportEnergy_C':           (2,3, 'kWh'),
 
-        'ExportGrid_C':             (2, 4, 'kWh'),
-        'Frequency_C':              (2, 5, 'Hz'),
-        'PF_C':                     (2, 6, ''),
-
-        'Voltage_Net':              (3, 0, 'V'),
-        # 'Current_Net':             (3,1, 'A'), # Second item in array is constant 0.0, net mode doesn't report net current.
-        'Power_Net':                (3, 2, 'W'),
-        'ImportEnergy_Net':         (3, 3, 'kWh'),
-
-        'ExportGrid_Net':           (3, 4, 'kWh'),
-        'Frequency_Net':            (3, 5, 'Hz'),
-        'PF_Net':                   (3, 6, ''),
+        'ExportGrid_C':             (2,4, 'kWh'),
+        'Frequency_C':              (2,5, 'Hz'),
+        'PF_C':                     (2,6, ''),
     }
     
     @staticmethod
