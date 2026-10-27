@@ -1,11 +1,11 @@
-﻿import setuptools
+import setuptools
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="iammeter",                                     # 包的分发名称，使用字母、数字、_、-
-    version="0.2.1",                                        # 版本号, 版本号规范：https://www.python.org/dev/peps/pep-0440/
+    version="0.2.2",                                        # 版本号, 版本号规范：https://www.python.org/dev/peps/pep-0440/
     author="yangbo1979",                                       # 作者名字
     author_email="gyangbo@gmail.com",                      # 作者邮箱
     description="IamMeter api",                            # 包的简介描述
@@ -13,6 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",          # 和上条命令配合使用，声明加载的是markdown文件
     url="https://github.com/lewei50/iammeter_pip_lib",                              # 项目开源地址，我这里写的是同性交友官网，大家可以写自己真实的开源网址
     packages=setuptools.find_packages(),                    # 如果项目由多个文件组成，我们可以使用find_packages()自动发现所有包和子包，而不是手动列出每个包，在这种情况下，包列表将是example_pkg
+    install_requires=["requests>=2.20.0"],
     classifiers=[                                           # 关于包的其他元数据(metadata)
         "Programming Language :: Python :: 3",              # 该软件包仅与Python3兼容
         "License :: OSI Approved :: MIT License",           # 根据MIT许可证开源
