@@ -1,79 +1,62 @@
-## IamMeter
+# IAMMETER local HTTP client
 
-Python Client for IamMeter device.
-
-See https://www.iammeter.com/docs
-
-##### Create a new connection by supplying IamMeter host and port(default:80)
-
-`import client`
-
-`s= client.IamMeter("host",port)`
-
-`print(s.client.get_data())`
-
-##### ChangeLog
-
-0.2.1 power_meter.py deprecated,using client.py instead.
-Change return format,more readable.
-
-0.1.7 first commit，return sensor‘s map
-
-
-### 0.2.2 (unreleased)
-
-HTTP reads now use an eight-second timeout and raise `requests.HTTPError` for
-unsuccessful HTTP status codes before parsing the response. Connection errors,
-timeouts and invalid JSON are propagated to the caller. Existing positional
-arguments and measurement keys are unchanged. The `requests` runtime dependency
-is now declared in the package metadata.
+Asynchronous local HTTP access for the IAMMETER Home Assistant Core upgrade,
+with the original synchronous APIs retained for existing users.
+Version `0.3.0` is a development candidate until published to PyPI.
 
 ```python
-from iammeter.client import IamMeter
+import asyncio
+import aiohttp
+from iammeter import AsyncClient
 
-meter = IamMeter("192.0.2.1", 80, timeout=5)
-print(meter.measurement)  # Initial read performed by the constructor
-print(meter.client.get_data())  # Subsequent read
+async def main():
+    async with aiohttp.ClientSession() as session:
+        client = AsyncClient(session, "meter.local", port=80)
+        measurement = await client.async_get_data()
+        print(measurement)
+
+asyncio.run(main())
 ```
 
-`timeout` is keyword-only and also available on `Client`. It accepts the same
-values as `requests.get(timeout=...)` (a number or connect/read timeout tuple).
-The timeout bounds individual connection/read waits; it is not an overall
-wall-clock deadline for the complete response.
+Home Assistant supplies its own shared `ClientSession`. The library never
+creates or closes that session and has no dependency on Home Assistant.
+The original `iammeter.client.Client` and `IamMeter` synchronous APIs remain
+available for existing callers, including their constructor signatures, attributes,
+requests exceptions and legacy measurement format/model grouping. The deprecated
+`iammeter.power_meter` import path is retained as well. New Home Assistant Core
+uses only `AsyncClient`; retaining compatibility does not make Core polling synchronous.
+The distribution includes requests and voluptuous for those legacy APIs.
 
-Run tests with `python3 -m pytest tests`.
+The address accepts a hostname or a complete HTTP/HTTPS URL. `/monitorjson`
+is appended once when needed. A full URL controls its own scheme and port.
+Credentials embedded in URLs and URL fragments are rejected. Supply optional
+`username=` and `password=` arguments for custom credentials.
 
-Meter addresses accept either a hostname/IP with a separate HTTP port, or a
-complete HTTP/HTTPS JSON endpoint:
+Requests use an explicit timeout (8 seconds by default). Access is anonymous
+unless credentials were supplied. A 401 response triggers one attempt with the
+legacy admin credentials, and successful legacy authentication is remembered
+for the lifetime of the client. Custom credentials are never replaced by that
+fallback. Cancellation propagates to the caller.
 
-```python
-meter = IamMeter("meter.local", 8080)
-meter = IamMeter("https://simulator.iammeter.com/WEM3080/monitorjson")
-```
+Catch `IammeterConnectionError` for connection/HTTP failures,
+`IammeterAuthError` for rejected authentication, and `IammeterDataError` for
+invalid JSON or malformed measurements.
 
-A full URL keeps its protocol, port, path prefix, and query parameters. Its port takes
-precedence over the separate argument; without an explicit port, HTTP uses 80
-and HTTPS uses 443. The path is completed with `/monitorjson` unless it already
-ends with that suffix. For example, `http://meter.local/WEM3050T/` becomes
-`http://meter.local/WEM3050T/monitorjson`. Trailing slashes are removed before
-checking the suffix, so it is never appended twice. Embedded credentials and
-fragments are rejected. HTTPS
-certificate verification remains enabled through the default Requests behavior.
+Supported models: WEM3080, WEM3162, WEM3080T, WEM3046T, WEM3050T, WEM3063T,
+and WEM2067. Current `method` prefixes identify the specific model; legacy
+three-phase responses without a recognized method retain the WEM3080T fallback.
+WEM3162 accepts lowercase `data` and preserves available identity metadata.
 
-Bare host/IP connections retain the existing legacy authentication. Full URLs
-are requested anonymously first, with legacy `admin/admin` retried only after an
-HTTP 401 response. Custom username/password settings are not added in this release.
+Readings retain the meter's engineering units and sign: V, A, W, kWh, Hz,
+unitless power factor (for example `0.95`), var, and kvarh. No energy integration
+or absolute-value conversion is performed by this library.
 
+WEM2067 exposes A/B only; its optional third row is NET, never channel C.
+Other three-phase models use A/B/C and an optional fourth NET row. Optional
+`EA.Reactive` rows expose reactive power, inductive energy and capacitive energy.
+Absent fields remain absent; they are never fabricated as zero. Measurements
+must be finite numbers or an explicit null for an unknown reading. Parsing and authentication behavior are informed by
+the independently maintained `lewei50/ha_iammeter` HTTP integration.
 
-### WEM2067 support (0.2.2 candidate)
-
-Responses with a `method` matching `5-*` are identified as `WEM2067`. The first
-two `Datas` rows are channels A and B. An optional third row is the NET summary,
-not a C channel. Existing measurement keys (`Power_A`, `ImportEnergy_B`,
-`Power_Net`, and others) are retained. Other multi-channel responses keep the
-existing `WEM3080T` family label and three physical channels; their optional NET
-summary remains the fourth row. Missing NET rows are valid and produce no NET
-keys. Malformed physical or present NET rows raise `ValueError`.
-
-This adds active measurements and optional NET readings; it does not add
-`EA.Reactive` sensors.
+Validation distinguishes seven-model synthetic coverage from physical-device
+acceptance. Physical WEM3162 and WEM3063T were not part of the current local lab.
