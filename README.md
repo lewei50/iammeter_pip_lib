@@ -2,7 +2,16 @@
 
 Asynchronous local HTTP access for the IAMMETER Home Assistant Core upgrade,
 with the original synchronous APIs retained for existing users.
-Version `0.3.0` is a development candidate until published to PyPI.
+
+## Installation
+
+Requires Python 3.11 or newer.
+
+```bash
+pip install iammeter==0.3.0
+```
+
+## Asynchronous usage
 
 ```python
 import asyncio
@@ -26,6 +35,20 @@ requests exceptions and legacy measurement format/model grouping. The deprecated
 `iammeter.power_meter` import path is retained as well. New Home Assistant Core
 uses only `AsyncClient`; retaining compatibility does not make Core polling synchronous.
 The distribution includes requests and voluptuous for those legacy APIs.
+
+## Synchronous usage
+
+Existing applications can continue using the synchronous client:
+
+```python
+from iammeter import Client
+
+client = Client("meter.local", port=80)
+measurement = client.get_data()
+print(measurement)
+```
+
+## Connection and measurements
 
 The address accepts a hostname or a complete HTTP/HTTPS URL. `/monitorjson`
 is appended once when needed. A full URL controls its own scheme and port.
